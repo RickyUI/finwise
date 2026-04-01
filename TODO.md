@@ -14,9 +14,9 @@ Proyecto de RAG (Retrieval-Augmented Generation) con memoria conversacional para
 - [x] **Pipeline de Procesamiento**
     - [x] Crear script de carga de PDF con `PyPDFLoader`.
     - [x] Implementar `RecursiveCharacterTextSplitter` para el chunking (probar 1000 tokens con 200 de overlap).
-- [ ] **Vector Store**
-    - [ ] Configurar `FAISS` localmente.
-    - [ ] Generar embeddings de los chunks y guardarlos en el vector store.
+- [x] **Vector Store**
+    - [x] Configurar `FAISS` localmente.
+    - [x] Generar embeddings de los chunks y guardarlos en el vector store.
 - [ ] **API Inicial (FastAPI)**
     - [ ] Endpoint `POST /upload`: Recibir archivo, procesar y confirmar indexación.
 
