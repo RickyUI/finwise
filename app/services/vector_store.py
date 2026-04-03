@@ -3,6 +3,8 @@ from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import os
 
+# TODO: Realizar la correción de la clase VectorStore para que no tenga problemas con FastAPI
+
 load_dotenv()
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -19,22 +21,7 @@ class VectorStore:
         self.vector_store = FAISS.from_documents(chunks, self.embeddings)
         return self.vector_store
     
-    def save_vector_store(self, file_path):
-        # Guardando el vector store en un archivo utilizando FAISS
-        if self.vector_store:
-            self.vector_store.save_local(file_path)
-        else:
-            raise ValueError("El vector store no ha sido creado. Por favor, cree el vector store antes de guardarlo.")
-        
-    def load_vector_store(self, file_path):
-        # Cargando el vector store desde un archivo utilizando FAISS
-        self.vector_store = FAISS.load_local(file_path, self.embeddings, allow_dangerous_deserialization=True)
-        return self.vector_store
-    
-    def query_vector_store(self, query):
-        # Realizando una consulta al vector store utilizando FAISS
-        if self.vector_store:
-            results = self.vector_store.similarity_search(query)
-            return results
-        else:
-            raise ValueError("El vector store no ha sido creado. Por favor, cree el vector store antes de realizar una consulta.")
+    def get_retriever(self):
+        if self.vector_store is None:
+            raise ValueError("El vector store no ha sido creado. Llama a create_vector_store() primero.")
+        return self.vector_store.as_retriever() # Devuelve un objeto retriever para realizar consultas de similitud en el vector store

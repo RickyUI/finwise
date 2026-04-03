@@ -4,6 +4,7 @@ python-multipart
 langchain
 langchain-anthropic
 langchain-community
+langchain-openai
 faiss-cpu
 pypdf
 python-dotenv
