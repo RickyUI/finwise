@@ -13,7 +13,7 @@ ALLOWED_CONTENT_TYPES = {"application/pdf"}
 
 @router.post("/upload/", status_code=201)
 async def upload_file(files: List[UploadFile] = File(...)):
-    
+    """Endpoint para subir archivos PDF al servidor. Valida que los archivos sean PDFs válidos y los guarda en el directorio de uploads."""
     # 1. Validar todos los archivos antes de guardar
     for f in files:
         if not f.content_type or f.content_type not in ALLOWED_CONTENT_TYPES:

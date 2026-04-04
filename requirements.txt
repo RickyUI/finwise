@@ -2,7 +2,6 @@ fastapi
 uvicorn
 python-multipart
 langchain
-langchain-anthropic
 langchain-community
 langchain-openai
 faiss-cpu

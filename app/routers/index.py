@@ -1,8 +1,7 @@
+from urllib import request
 from fastapi import APIRouter, HTTPException
 import os
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
-from app.services.vector_store import VectorStore
 from app.services.processor import PDFProcessor
 
 router = APIRouter(prefix="/index", tags=["index"])
@@ -13,13 +12,13 @@ UPLOAD_DIR = "uploads"
 
 @router.post("/index/", status_code=201)
 async def index_files():
+    """Endpoint para indexar los archivos PDF subidos al servidor. Procesa cada archivo utilizando PDFProcessor para cargarlo y dividirlo en fragmentos, luego crea un vector store utilizando VectorStore y los embeddings generados por OpenAIEmbeddings."""
     # Verificamos que exista el directorio de uploads antes de intentar listar los archivos
     if not (os.path.exists(UPLOAD_DIR) and os.path.isdir(UPLOAD_DIR)):
         raise HTTPException(status_code=400, detail="El directorio de uploads no existe o no es un directorio válido.")
     
-    # Inicializamos los embeddings y el vector store
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=os.getenv("OPENAI_API_KEY"))
-    vector_store = VectorStore(embeddings)
+    # Inicializamos los embeddings y el vector stor
+    vector_store = request.app.state.vector_store
     
     # Cargamos file.name de cada archivo en el directorio de uploads
     files = [f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
