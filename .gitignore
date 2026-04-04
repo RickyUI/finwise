@@ -19,8 +19,31 @@ faiss_index/
 Thumbs.db
 
 # Documentos de prueba (opcional)
-data/*.pdf
+data/
+uploads/
 temp/
 
 # Archivo de tareas pendientes, opcional para mantenerlo fuera del repositorio
-TODO.md 
+TODO.md
+
+# Logs
+*.log
+
+# Bases de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE y editores
+.vscode/
+.idea/
+
+# Archivos de construcción y distribución
+dist/
+build/
+*.egg-info/
+
+# Cobertura y pruebas
+.coverage
+htmlcov/
+.pytest_cache/ 
