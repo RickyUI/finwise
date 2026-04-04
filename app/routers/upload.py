@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException
 
 import os
 
-router = APIRouter()
+router = APIRouter(prefix="/files", tags=["files"])
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
