@@ -8,6 +8,13 @@ import requests
 
 API_URL = "http://127.0.0.1:8000"
 REQUEST_TIMEOUT = 120
+SUGGESTED_QUESTIONS = [
+    ("Resumen ejecutivo", "Resume el documento en formato ejecutivo."),
+    ("Hallazgos clave", "Enumera los hallazgos clave del documento."),
+    ("Riesgos y alertas", "Identifica riesgos o alertas relevantes del documento."),
+    ("Metricas financieras", "Extrae las metricas financieras mencionadas en el documento."),
+    ("Guidance y outlook", "Explica el guidance, outlook o expectativas mencionadas en el documento."),
+]
 
 
 def _extract_error(response: requests.Response) -> str:
@@ -26,7 +33,7 @@ def _format_file_names(files: list[str]) -> str:
 
 def _chat_placeholder(indexed: bool, uploaded: bool) -> str:
     if indexed:
-        return "Pregunta sobre ingresos, guidance, riesgos, margenes o cualquier dato del documento..."
+        return "Pregunta libre o usa una sugerencia para analizar ingresos, guidance, riesgos, margenes y mas..."
     if uploaded:
         return "Carga tus archivos para habilitar el chat."
     return "Sube uno o mas PDFs para comenzar."
@@ -49,6 +56,17 @@ def _session_summary(files: list[str], indexed: bool) -> str:
     )
 
 
+def _suggested_buttons_update(interactive: bool) -> list[gr.update]:
+    return [gr.update(interactive=interactive) for _ in SUGGESTED_QUESTIONS]
+
+
+def _format_sources_block(sources: list[str]) -> str:
+    unique_sources = list(dict.fromkeys(sources))
+    if not unique_sources:
+        return "- Sin fuentes reportadas"
+    return "\n".join(f"- {source}" for source in unique_sources)
+
+
 def upload_files(files):
     if not files:
         empty_files: list[str] = []
@@ -67,6 +85,7 @@ def upload_files(files):
             [],
             [],
             _session_summary(empty_files, indexed=False),
+            *_suggested_buttons_update(False),
         )
 
     file_handles = []
@@ -102,6 +121,7 @@ def upload_files(files):
             [],
             [],
             _session_summary(empty_files, indexed=False),
+            *_suggested_buttons_update(False),
         )
     finally:
         for handle in file_handles:
@@ -124,6 +144,7 @@ def upload_files(files):
             [],
             [],
             _session_summary(empty_files, indexed=False),
+            *_suggested_buttons_update(False),
         )
 
     payload = response.json()
@@ -143,6 +164,7 @@ def upload_files(files):
         [],
         [],
         _session_summary(saved_files, indexed=False),
+        *_suggested_buttons_update(False),
     )
 
 
@@ -160,6 +182,7 @@ def index_files(uploaded_files: list[str]):
             [],
             [],
             _session_summary([], indexed=False),
+            *_suggested_buttons_update(False),
         )
 
     try:
@@ -177,6 +200,7 @@ def index_files(uploaded_files: list[str]):
             [],
             [],
             _session_summary(uploaded_files, indexed=False),
+            *_suggested_buttons_update(False),
         )
 
     if response.status_code != 201:
@@ -192,6 +216,7 @@ def index_files(uploaded_files: list[str]):
             [],
             [],
             _session_summary(uploaded_files, indexed=False),
+            *_suggested_buttons_update(False),
         )
 
     payload = response.json()
@@ -207,6 +232,7 @@ def index_files(uploaded_files: list[str]):
         [],
         [],
         _session_summary(uploaded_files, indexed=True),
+        *_suggested_buttons_update(True),
     )
 
 
@@ -227,12 +253,10 @@ def ask_question(question: str, history: list[dict], indexed: bool):
         if response.status_code == 200:
             payload = response.json()
             sources = payload.get("sources", [])
-            sources_block = (
-                "\n".join(f"- {source}" for source in sources)
-                if sources
-                else "- Sin fuentes reportadas"
-            )
-            answer = f"{payload.get('response', '')}\n\n**Fuentes**\n{sources_block}"
+            sources_block = _format_sources_block(sources)
+            answer = (payload.get("response", "") or "").strip()
+            if "## Fuentes" not in answer:
+                answer = f"{answer}\n\n## Fuentes\n{sources_block}".strip()
         else:
             answer = f"Error en la consulta: {_extract_error(response)}"
 
@@ -241,6 +265,10 @@ def ask_question(question: str, history: list[dict], indexed: bool):
         {"role": "assistant", "content": answer},
     ]
     return new_history, "", new_history
+
+
+def ask_suggested_question(prompt: str, history: list[dict], indexed: bool):
+    return ask_question(prompt, history, indexed)
 
 
 def clear_chat(indexed: bool, uploaded_files: list[str]):
@@ -331,8 +359,26 @@ with gr.Blocks(title="FinWise") as demo:
                 value=[],
                 height=640,
                 layout="bubble",
-                placeholder="Las respuestas apareceran aqui cuando el chat este habilitado.",
+                placeholder="Haz una pregunta libre o usa uno de los analisis rapidos cuando el chat este habilitado.",
             )
+            gr.Markdown(
+                """
+                **Preguntas sugeridas**
+
+                Usa los botones para disparar analisis rapidos sobre el contenido cargado.
+                """
+            )
+            suggested_buttons: list[gr.Button] = []
+            with gr.Row():
+                for label, _ in SUGGESTED_QUESTIONS[:3]:
+                    suggested_buttons.append(
+                        gr.Button(label, variant="secondary", interactive=False)
+                    )
+            with gr.Row():
+                for label, _ in SUGGESTED_QUESTIONS[3:]:
+                    suggested_buttons.append(
+                        gr.Button(label, variant="secondary", interactive=False)
+                    )
             question_box = gr.Textbox(
                 label="Pregunta",
                 value="",
@@ -359,6 +405,7 @@ with gr.Blocks(title="FinWise") as demo:
             chatbot,
             chat_history,
             session_summary,
+            *suggested_buttons,
         ],
     )
 
@@ -373,6 +420,7 @@ with gr.Blocks(title="FinWise") as demo:
             chatbot,
             chat_history,
             session_summary,
+            *suggested_buttons,
         ],
     )
 
@@ -388,6 +436,13 @@ with gr.Blocks(title="FinWise") as demo:
         outputs=[chatbot, question_box, chat_history],
     )
 
+    for button, (_, prompt) in zip(suggested_buttons, SUGGESTED_QUESTIONS):
+        button.click(
+            lambda history, indexed, prompt=prompt: ask_suggested_question(prompt, history, indexed),
+            inputs=[chat_history, indexed],
+            outputs=[chatbot, question_box, chat_history],
+        )
+
     clear_button.click(
         clear_chat,
         inputs=[indexed, uploaded_files],
@@ -396,4 +451,4 @@ with gr.Blocks(title="FinWise") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(theme=theme)
+    demo.launch(theme=theme, share=True)

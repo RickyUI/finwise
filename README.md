@@ -10,6 +10,8 @@ FinWise es una aplicacion para analizar documentos financieros en PDF con un flu
 - Procesamiento de PDFs con `PyPDFLoader` y fragmentacion con `RecursiveCharacterTextSplitter`.
 - Indexacion semantica en memoria con FAISS y embeddings de OpenAI.
 - Consulta de documentos con un flujo RAG y devolucion de fuentes.
+- Preguntas sugeridas y botones de analisis rapido en la interfaz.
+- Formato fijo de respuesta para todo el chat con secciones de resumen, hallazgos, riesgos y fuentes.
 - Reinicio del estado documental mediante eliminacion de archivos y limpieza del vector store.
 
 ## Stack tecnologico
@@ -47,9 +49,33 @@ app/
 1. El usuario sube uno o varios PDF a `/upload/`.
 2. El backend guarda los archivos en `uploads/`.
 3. Se llama `/index/` para cargar, dividir e indexar los documentos.
-4. Se consulta `/query/` con una pregunta en lenguaje natural.
-5. El sistema recupera contexto relevante y genera una respuesta con sus fuentes.
+4. El usuario consulta `/query/` con una pregunta libre o dispara un analisis rapido desde la interfaz.
+5. El sistema recupera contexto relevante y genera una respuesta en formato fijo con sus fuentes.
 6. Si hace falta reiniciar la sesion documental, se pueden listar o eliminar archivos desde los endpoints de `upload`.
+
+## Experiencia en la interfaz
+
+Una vez que los archivos han sido cargados al chat, la interfaz de Gradio permite:
+
+- Hacer preguntas libres en lenguaje natural.
+- Lanzar analisis rapidos desde botones predefinidos.
+- Usar preguntas sugeridas como punto de partida para explorar el contenido.
+- Recibir respuestas con una estructura fija para facilitar la lectura.
+
+Los analisis rapidos incluidos actualmente son:
+
+- `Resumen ejecutivo`
+- `Hallazgos clave`
+- `Riesgos y alertas`
+- `Metricas financieras`
+- `Guidance y outlook`
+
+El formato de respuesta del asistente sigue esta estructura:
+
+- `Resumen ejecutivo`
+- `Hallazgos clave`
+- `Riesgos o alertas`
+- `Fuentes`
 
 ## Endpoints disponibles
 
@@ -99,7 +125,9 @@ La interfaz de Gradio te permite:
 
 - Subir archivos PDF.
 - Cargar los archivos al chat.
-- Hacer preguntas sobre el contenido.
+- Hacer preguntas libres sobre el contenido.
+- Usar preguntas sugeridas y botones de analisis rapido.
+- Ver respuestas en formato fijo con fuentes.
 - Limpiar la conversacion sin tocar los archivos ya cargados.
 
 ## Notas tecnicas
@@ -107,4 +135,5 @@ La interfaz de Gradio te permite:
 - El indice FAISS vive en memoria y se reinicia cuando el servidor se apaga.
 - `app.state.vector_store` comparte la instancia del vector store entre los routers.
 - La logica de consulta al LLM esta actualmente dentro de `app/routers/query.py`.
+- El formato fijo de las respuestas se controla desde el prompt del endpoint `POST /query/`.
 - El endpoint `DELETE /upload/delete` tambien reinicia el vector store para dejar la sesion limpia.
